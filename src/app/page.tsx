@@ -13,7 +13,7 @@ import { getRandomCondition } from '@/config/conditions';
 import type { Message } from '@/types';
 import ChatMessageItem from '@/components/ChatMessageItem';
 import AppHeader from '@/components/AppHeader';
-import { SendHorizonal, Lightbulb, RotateCcw, Loader2 } from 'lucide-react';
+import { SendHorizonal, Lightbulb, RotateCcw, Loader2, Trophy } from 'lucide-react';
 
 const ChatPage: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -22,6 +22,7 @@ const ChatPage: React.FC = () => {
   const [isLoadingAI, setIsLoadingAI] = useState(false);
   const [isLoadingFeedback, setIsLoadingFeedback] = useState(false);
   const [gameOver, setGameOver] = useState(false);
+  const [score, setScore] = useState(0); // Added score state
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -38,13 +39,14 @@ const ChatPage: React.FC = () => {
     setMessages([
       {
         id: crypto.randomUUID(),
-        text: `你好！我今天感覺不太舒服。問我一些問題來弄清楚是哪裡出了問題。（提示：目前的狀況是 ${newCondition}，此訊息僅供測試，實際遊玩時會隱藏）`,
+        text: `你好！我今天感覺不太舒服。問我一些問題來弄清楚是哪裡出了問題。`, // Removed hint for production
         sender: 'system',
         timestamp: new Date(),
       },
     ]);
     setGameOver(false);
     setUserInput('');
+    // Score is not reset here to be cumulative across rounds in the same session
   };
 
   useEffect(() => {
@@ -117,15 +119,17 @@ const ChatPage: React.FC = () => {
       addMessage(feedbackResponse.feedback, 'system', true);
 
       if (feedbackResponse.isCorrect) {
+        const newScore = score + 1;
+        setScore(newScore);
         setGameOver(true);
         addMessage(
-          `恭喜！您已正確診斷出 ${currentCondition}。`,
+          `恭喜！您已正確診斷出 ${currentCondition}。您的總得分是：${newScore}。`,
           'system',
           true
         );
         toast({
           title: '診斷正確！',
-          description: `您已成功診斷出 ${currentCondition}。`,
+          description: `您已成功診斷出 ${currentCondition}。總得分：${newScore}。`,
         });
       }
     } catch (error) {
@@ -146,8 +150,12 @@ const ChatPage: React.FC = () => {
       <AppHeader />
       <main className="flex-grow container mx-auto py-6 flex justify-center items-start">
         <Card className="w-full max-w-2xl shadow-xl flex flex-col h-[calc(100vh-150px)]">
-          <CardHeader className="border-b">
-            <CardTitle className="text-center text-xl text-foreground/80">AI 病患聊天室</CardTitle>
+          <CardHeader className="border-b flex flex-row justify-between items-center p-4">
+            <CardTitle className="text-xl text-foreground/80">AI 病患聊天室</CardTitle>
+            <div className="flex items-center text-lg font-semibold text-primary">
+              <Trophy className="h-5 w-5 mr-2" />
+              得分：{score}
+            </div>
           </CardHeader>
           <CardContent className="flex-grow p-0 overflow-hidden">
             <ScrollArea className="h-full p-4" ref={scrollAreaRef}>
@@ -207,3 +215,4 @@ const ChatPage: React.FC = () => {
 };
 
 export default ChatPage;
+    
