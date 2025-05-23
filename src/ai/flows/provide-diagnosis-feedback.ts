@@ -1,3 +1,4 @@
+
 // This file contains the Genkit flow for providing feedback on the user's diagnosis attempts.
 
 'use server';
@@ -28,17 +29,17 @@ const provideDiagnosisFeedbackPrompt = ai.definePrompt({
   name: 'provideDiagnosisFeedbackPrompt',
   input: {schema: ProvideDiagnosisFeedbackInputSchema},
   output: {schema: ProvideDiagnosisFeedbackOutputSchema},
-  prompt: `You are a medical expert providing feedback to a user who is attempting to diagnose a patient's condition.
+  prompt: `你是一位醫學專家，正在為嘗試診斷病患狀況的使用者提供回饋。
 
-  The user has made the following diagnosis attempt: {{{diagnosisAttempt}}}
-  The correct diagnosis is: {{{correctDiagnosis}}}
-  The following clues have been provided to the user about the patient: {{{patientClues}}}
+  使用者嘗試了以下診斷：{{{diagnosisAttempt}}}
+  正確的診斷是：{{{correctDiagnosis}}}
+  已向使用者提供了有關病患的以下線索：{{{patientClues}}}
 
-  Provide feedback to the user, indicating how close they are to the correct diagnosis.
-  Include specific hints or suggestions to guide them towards the correct answer.
-  Also, indicate whether the diagnosis attempt was correct by setting the isCorrect field.
-  If the answer is not correct, do not give away the answer.
-  Keep it brief, within 50 words.
+  向使用者提供回饋，說明他們距離正確診斷有多近。
+  包括具體的提示或建議，以引導他們找到正確答案。
+  同時，透過設定 isCorrect 欄位來指示診斷嘗試是否正確。
+  如果答案不正確，請不要洩露答案。
+  回答請簡潔，控制在 50 字以內。請使用繁體中文回答。
   `,
 });
 

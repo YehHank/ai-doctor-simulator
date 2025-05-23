@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef, type FormEvent } from 'react';
@@ -27,7 +28,7 @@ const ChatPage: React.FC = () => {
   const formatChatHistory = (history: Message[]): string => {
     return history
       .filter(msg => msg.sender === 'user' || msg.sender === 'ai')
-      .map(msg => `${msg.sender === 'user' ? 'User' : 'Patient'}: ${msg.text}`)
+      .map(msg => `${msg.sender === 'user' ? '使用者' : '病患'}: ${msg.text}`)
       .join('\n');
   };
 
@@ -37,7 +38,7 @@ const ChatPage: React.FC = () => {
     setMessages([
       {
         id: crypto.randomUUID(),
-        text: `Hello! I'm not feeling too well today. Ask me some questions to figure out what's wrong. (The condition is: ${newCondition} for testing, this will be hidden)`,
+        text: `你好！我今天感覺不太舒服。問我一些問題來弄清楚是哪裡出了問題。（提示：目前的狀況是 ${newCondition}，此訊息僅供測試，實際遊玩時會隱藏）`,
         sender: 'system',
         timestamp: new Date(),
       },
@@ -85,10 +86,10 @@ const ChatPage: React.FC = () => {
       addMessage(response.patientResponse, 'ai');
     } catch (error) {
       console.error('Error generating patient response:', error);
-      addMessage('Sorry, I encountered an error. Please try again.', 'system', false, true);
+      addMessage('抱歉，我遇到一個錯誤。請再試一次。', 'system', false, true);
       toast({
-        title: 'Error',
-        description: 'Could not get response from AI patient.',
+        title: '錯誤',
+        description: '無法從 AI 病患獲取回應。',
         variant: 'destructive',
       });
     } finally {
@@ -101,7 +102,7 @@ const ChatPage: React.FC = () => {
     if (!userInput.trim() || isLoadingFeedback || gameOver) return;
 
     const diagnosisAttempt = userInput;
-    addMessage(`My diagnosis attempt: ${diagnosisAttempt}`, 'user');
+    addMessage(`我的診斷嘗試： ${diagnosisAttempt}`, 'user');
     setUserInput('');
     setIsLoadingFeedback(true);
 
@@ -118,21 +119,21 @@ const ChatPage: React.FC = () => {
       if (feedbackResponse.isCorrect) {
         setGameOver(true);
         addMessage(
-          `Congratulations! You correctly diagnosed ${currentCondition}.`,
+          `恭喜！您已正確診斷出 ${currentCondition}。`,
           'system',
           true
         );
         toast({
-          title: 'Diagnosis Correct!',
-          description: `You successfully diagnosed ${currentCondition}.`,
+          title: '診斷正確！',
+          description: `您已成功診斷出 ${currentCondition}。`,
         });
       }
     } catch (error) {
       console.error('Error providing diagnosis feedback:', error);
-      addMessage('Sorry, I encountered an error processing your diagnosis. Please try again.', 'system', false, true);
+      addMessage('抱歉，處理您的診斷時發生錯誤。請再試一次。', 'system', false, true);
       toast({
-        title: 'Error',
-        description: 'Could not process diagnosis.',
+        title: '錯誤',
+        description: '無法處理診斷。',
         variant: 'destructive',
       });
     } finally {
@@ -146,7 +147,7 @@ const ChatPage: React.FC = () => {
       <main className="flex-grow container mx-auto py-6 flex justify-center items-start">
         <Card className="w-full max-w-2xl shadow-xl flex flex-col h-[calc(100vh-150px)]">
           <CardHeader className="border-b">
-            <CardTitle className="text-center text-xl text-foreground/80">AI Patient Chat</CardTitle>
+            <CardTitle className="text-center text-xl text-foreground/80">AI 病患聊天室</CardTitle>
           </CardHeader>
           <CardContent className="flex-grow p-0 overflow-hidden">
             <ScrollArea className="h-full p-4" ref={scrollAreaRef}>
@@ -156,7 +157,7 @@ const ChatPage: React.FC = () => {
               {(isLoadingAI || isLoadingFeedback) && (
                 <div className="flex justify-start items-center p-2">
                   <Loader2 className="h-5 w-5 text-muted-foreground animate-spin mr-2" />
-                  <span className="text-sm text-muted-foreground">AI is thinking...</span>
+                  <span className="text-sm text-muted-foreground">AI 正在思考...</span>
                 </div>
               )}
             </ScrollArea>
@@ -164,13 +165,13 @@ const ChatPage: React.FC = () => {
           <CardFooter className="p-4 border-t">
             {gameOver ? (
               <Button onClick={initializeGame} className="w-full" variant="default">
-                <RotateCcw className="mr-2 h-4 w-4" /> Play Again
+                <RotateCcw className="mr-2 h-4 w-4" /> 再玩一次
               </Button>
             ) : (
               <form onSubmit={handleSendMessage} className="w-full flex gap-2">
                 <Input
                   type="text"
-                  placeholder="Type your message or diagnosis..."
+                  placeholder="輸入您的訊息或診斷..."
                   value={userInput}
                   onChange={e => setUserInput(e.target.value)}
                   disabled={isLoadingAI || isLoadingFeedback || gameOver}
@@ -180,21 +181,21 @@ const ChatPage: React.FC = () => {
                   type="submit"
                   disabled={isLoadingAI || isLoadingFeedback || !userInput.trim()}
                   variant="default"
-                  aria-label="Send message"
+                  aria-label="傳送訊息"
                 >
                   {isLoadingAI ? <Loader2 className="animate-spin" /> : <SendHorizonal />}
-                  <span className="ml-2 hidden sm:inline">Send</span>
+                  <span className="ml-2 hidden sm:inline">傳送</span>
                 </Button>
                 <Button
                   type="button"
                   onClick={handleSubmitDiagnosis}
                   disabled={isLoadingAI || isLoadingFeedback || !userInput.trim()}
                   variant="outline"
-                  aria-label="Submit diagnosis"
+                  aria-label="提交診斷"
                   className="border-accent text-accent hover:bg-accent/10 hover:text-accent"
                 >
                   {isLoadingFeedback ? <Loader2 className="animate-spin" /> : <Lightbulb />}
-                   <span className="ml-2 hidden sm:inline">Diagnose</span>
+                   <span className="ml-2 hidden sm:inline">診斷</span>
                 </Button>
               </form>
             )}

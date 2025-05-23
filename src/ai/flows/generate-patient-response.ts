@@ -1,3 +1,4 @@
+
 // This file is machine-generated - changes may be lost.
 'use server';
 /**
@@ -31,15 +32,15 @@ const prompt = ai.definePrompt({
   name: 'generatePatientResponsePrompt',
   input: {schema: GeneratePatientResponseInputSchema},
   output: {schema: GeneratePatientResponseOutputSchema},
-  prompt: `You are an AI patient with the following medical condition: {{{medicalCondition}}}. 
+  prompt: `你是一位 AI 病患，患有以下疾病：{{{medicalCondition}}}。
 
-Respond to the user's input as if you were the patient. Keep the response concise, and only give out clues when the user asks direct questions about your symptoms.
+請像病患一樣回應使用者的輸入。回答應簡潔，只有當使用者直接詢問你的症狀時才給出線索。請使用繁體中文回答。
 
-Chat History: {{{chatHistory}}}
+聊天記錄：{{{chatHistory}}}
 
-User Input: {{{userInput}}}
+使用者輸入：{{{userInput}}}
 
-Patient Response: `,
+病患回應：`,
 });
 
 const generatePatientResponseFlow = ai.defineFlow(
