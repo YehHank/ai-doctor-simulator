@@ -183,12 +183,21 @@ const ChatPage: React.FC = () => {
     if (!userInput.trim() || isLoadingFeedback || gameOver) return;
 
     const diagnosisAttempt = userInput;
+    // Capture messages *before* adding the current diagnosis attempt message
+    const messagesBeforeThisDiagnosisAttempt = [...messages];
+
     addMessage(`我的診斷： ${diagnosisAttempt}`, 'user');
     setUserInput('');
     setIsLoadingFeedback(true);
 
     try {
-      const clues = formatChatHistory(messages);
+      // Filter out previous user diagnosis attempts from the history used for clues.
+      // formatChatHistory will filter out system messages.
+      const relevantHistoryForClues = messagesBeforeThisDiagnosisAttempt.filter(
+        msg => !(msg.sender === 'user' && msg.text.startsWith('我的診斷：'))
+      );
+      const clues = formatChatHistory(relevantHistoryForClues);
+      
       const feedbackResponse = await provideDiagnosisFeedback({
         diagnosisAttempt,
         correctDiagnosis: currentCondition,
@@ -349,3 +358,4 @@ const ChatPage: React.FC = () => {
 };
 
 export default ChatPage;
+
