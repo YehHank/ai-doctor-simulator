@@ -16,6 +16,7 @@ const GeneratePatientResponseInputSchema = z.object({
   userInput: z.string().describe('The user input question or statement.'),
   medicalCondition: z.string().describe('The hidden medical condition of the patient.'),
   chatHistory: z.string().optional().describe('The past chat history between user and AI patient'),
+  modelName: z.string().optional().describe('The AI model to use (e.g., googleai/gemini-2.0-flash, ollama/mistral). If not provided, uses default.'),
 });
 export type GeneratePatientResponseInput = z.infer<typeof GeneratePatientResponseInputSchema>;
 
@@ -30,7 +31,8 @@ export async function generatePatientResponse(input: GeneratePatientResponseInpu
 
 const prompt = ai.definePrompt({
   name: 'generatePatientResponsePrompt',
-  input: {schema: GeneratePatientResponseInputSchema},
+  // The default model for this prompt is taken from ai.ts if not overridden at call time
+  input: {schema: GeneratePatientResponseInputSchema.omit({modelName: true})}, // modelName is not part of the prompt's direct input variables
   output: {schema: GeneratePatientResponseOutputSchema},
   prompt: `你是一位 AI 病患，患有以下疾病：{{{medicalCondition}}}。
 
@@ -49,8 +51,18 @@ const generatePatientResponseFlow = ai.defineFlow(
     inputSchema: GeneratePatientResponseInputSchema,
     outputSchema: GeneratePatientResponseOutputSchema,
   },
-  async input => {
-    const {output} = await prompt(input);
+  async (input) => {
+    // Prepare prompt data, excluding modelName as it's not part of the Handlebars template
+    const promptData = {
+      userInput: input.userInput,
+      medicalCondition: input.medicalCondition,
+      chatHistory: input.chatHistory,
+    };
+
+    const {output} = await prompt(
+      promptData, 
+      input.modelName ? { model: input.modelName } : {}
+    );
     return output!;
   }
 );

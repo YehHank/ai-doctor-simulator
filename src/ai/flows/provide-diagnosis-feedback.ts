@@ -10,6 +10,7 @@ const ProvideDiagnosisFeedbackInputSchema = z.object({
   diagnosisAttempt: z.string().describe('The user\'s diagnosis attempt.'),
   correctDiagnosis: z.string().describe('The actual correct diagnosis.'),
   patientClues: z.string().describe('Clues about the patient provided to the user.'),
+  modelName: z.string().optional().describe('The AI model to use (e.g., googleai/gemini-2.0-flash, ollama/mistral). If not provided, uses default.'),
 });
 
 export type ProvideDiagnosisFeedbackInput = z.infer<typeof ProvideDiagnosisFeedbackInputSchema>;
@@ -27,7 +28,8 @@ export async function provideDiagnosisFeedback(input: ProvideDiagnosisFeedbackIn
 
 const provideDiagnosisFeedbackPrompt = ai.definePrompt({
   name: 'provideDiagnosisFeedbackPrompt',
-  input: {schema: ProvideDiagnosisFeedbackInputSchema},
+  // The default model for this prompt is taken from ai.ts if not overridden at call time
+  input: {schema: ProvideDiagnosisFeedbackInputSchema.omit({modelName: true})}, // modelName is not part of the prompt's direct input variables
   output: {schema: ProvideDiagnosisFeedbackOutputSchema},
   prompt: `你是一位醫學專家，正在為嘗試診斷病患狀況的使用者提供回饋。
 
@@ -49,8 +51,18 @@ const provideDiagnosisFeedbackFlow = ai.defineFlow(
     inputSchema: ProvideDiagnosisFeedbackInputSchema,
     outputSchema: ProvideDiagnosisFeedbackOutputSchema,
   },
-  async input => {
-    const {output} = await provideDiagnosisFeedbackPrompt(input);
+  async (input) => {
+    // Prepare prompt data, excluding modelName as it's not part of the Handlebars template
+    const promptData = {
+      diagnosisAttempt: input.diagnosisAttempt,
+      correctDiagnosis: input.correctDiagnosis,
+      patientClues: input.patientClues,
+    };
+    
+    const {output} = await provideDiagnosisFeedbackPrompt(
+      promptData,
+      input.modelName ? { model: input.modelName } : {}
+    );
     return output!;
   }
 );

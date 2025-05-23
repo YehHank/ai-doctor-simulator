@@ -24,6 +24,7 @@ import AppHeader from '@/components/AppHeader';
 import { SendHorizonal, Lightbulb, RotateCcw, Loader2, Trophy, Clock, SkipForward, Play } from 'lucide-react';
 
 const ROUND_DURATION_SECONDS = 300; // 5 minutes
+const DEFAULT_MODEL_NAME = 'googleai/gemini-2.0-flash'; // Or 'ollama/mistral' for Ollama (ensure Ollama is running and 'mistral' model is available)
 
 const ChatPage: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -35,6 +36,12 @@ const ChatPage: React.FC = () => {
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(ROUND_DURATION_SECONDS);
   const [isTimeUpDialogOpen, setIsTimeUpDialogOpen] = useState(false);
+  // TODO: Add UI for selecting the model if desired.
+  // For Ollama, ensure your Ollama server is running (usually http://localhost:11434)
+  // and the specified model (e.g., 'mistral', 'llama2') is downloaded and available.
+  // Example Ollama model name: 'ollama/mistral'
+  const [selectedModel, setSelectedModel] = useState<string>(DEFAULT_MODEL_NAME);
+
 
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -155,6 +162,7 @@ const ChatPage: React.FC = () => {
         userInput: userMessageText,
         medicalCondition: currentCondition,
         chatHistory: historyForAI,
+        modelName: selectedModel,
       });
       addMessage(response.patientResponse, 'ai');
     } catch (error) {
@@ -185,6 +193,7 @@ const ChatPage: React.FC = () => {
         diagnosisAttempt,
         correctDiagnosis: currentCondition,
         patientClues: clues,
+        modelName: selectedModel,
       });
 
       addMessage(feedbackResponse.feedback, 'system', true);
@@ -252,7 +261,7 @@ const ChatPage: React.FC = () => {
               {(isLoadingAI || isLoadingFeedback) && (
                 <div className="flex justify-start items-center p-2">
                   <Loader2 className="h-5 w-5 text-muted-foreground animate-spin mr-2" />
-                  <span className="text-sm text-muted-foreground">AI 正在思考...</span>
+                  <span className="text-sm text-muted-foreground">AI ({selectedModel.startsWith('ollama') ? 'Ollama' : 'Google AI'}) 正在思考...</span>
                 </div>
               )}
             </ScrollArea>
@@ -340,6 +349,3 @@ const ChatPage: React.FC = () => {
 };
 
 export default ChatPage;
-    
-
-    
