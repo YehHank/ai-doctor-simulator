@@ -237,7 +237,7 @@ const ChatPage: React.FC = () => {
   const handleSkipQuestion = () => {
     if (isLoadingAI || isLoadingFeedback || gameOver) return;
     addMessage('使用者選擇跳過此題。正在準備新的病例...', 'system');
-    initializeGame(false, true); // Don't reset score, but reset timer for new question
+    initializeGame(false, false); // Don't reset score, and don't reset timer for new question
   };
   
   const formatTime = (seconds: number) => {
