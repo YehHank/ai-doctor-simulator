@@ -6,6 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 import { generatePatientResponse } from '@/ai/flows/generate-patient-response';
 import { provideDiagnosisFeedback } from '@/ai/flows/provide-diagnosis-feedback';
@@ -13,7 +21,9 @@ import { getRandomCondition } from '@/config/conditions';
 import type { Message } from '@/types';
 import ChatMessageItem from '@/components/ChatMessageItem';
 import AppHeader from '@/components/AppHeader';
-import { SendHorizonal, Lightbulb, RotateCcw, Loader2, Trophy } from 'lucide-react';
+import { SendHorizonal, Lightbulb, RotateCcw, Loader2, Trophy, Clock, SkipForward } from 'lucide-react';
+
+const ROUND_DURATION_SECONDS = 300; // 5 minutes
 
 const ChatPage: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -23,7 +33,11 @@ const ChatPage: React.FC = () => {
   const [isLoadingFeedback, setIsLoadingFeedback] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [score, setScore] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(ROUND_DURATION_SECONDS);
+  const [isTimeUpDialogOpen, setIsTimeUpDialogOpen] = useState(false);
+
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
 
   const formatChatHistory = (history: Message[]): string => {
@@ -33,7 +47,10 @@ const ChatPage: React.FC = () => {
       .join('\n');
   };
 
-  const initializeGame = () => {
+  const initializeGame = (resetScoreFlag = false) => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
     const newCondition = getRandomCondition();
     setCurrentCondition(newCondition);
     setMessages([
@@ -46,11 +63,45 @@ const ChatPage: React.FC = () => {
     ]);
     setGameOver(false);
     setUserInput('');
+    setTimeLeft(ROUND_DURATION_SECONDS);
+    setIsTimeUpDialogOpen(false);
+    if (resetScoreFlag) {
+      setScore(0);
+    }
   };
 
   useEffect(() => {
     initializeGame();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Initialize on first load
+
+  // Timer effect
+  useEffect(() => {
+    const clearTimer = () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+
+    if (gameOver) {
+      clearTimer();
+      return;
+    }
+
+    if (timeLeft <= 0) {
+      clearTimer();
+      setGameOver(true);
+      setIsTimeUpDialogOpen(true);
+      return;
+    }
+
+    timerRef.current = setInterval(() => {
+      setTimeLeft(prev => prev - 1);
+    }, 1000);
+
+    return clearTimer;
+  }, [timeLeft, gameOver]);
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -120,7 +171,7 @@ const ChatPage: React.FC = () => {
       if (feedbackResponse.isCorrect) {
         const newScore = score + 1;
         setScore(newScore);
-        setGameOver(true);
+        setGameOver(true); // Mark game as over, timer will stop
         addMessage(
           `恭喜！您已正確診斷出「${currentCondition}」。您的總得分是：${newScore}。`,
           'system',
@@ -144,15 +195,31 @@ const ChatPage: React.FC = () => {
     }
   };
 
+  const handleSkipQuestion = () => {
+    if (isLoadingAI || isLoadingFeedback || gameOver) return;
+    addMessage('使用者選擇跳過此題。正在準備新的病例...', 'system');
+    initializeGame(); // This will reset the timer and get a new condition
+  };
+  
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
   return (
     <div className="flex flex-col h-screen bg-background">
       <AppHeader />
       <main className="flex-grow container mx-auto py-6 flex justify-center items-start">
         <Card className="w-full max-w-2xl shadow-xl flex flex-col h-[calc(100vh-150px)]">
-          <CardHeader className="border-b flex flex-row justify-between items-center p-4">
+          <CardHeader className="border-b flex flex-row justify-between items-center p-4 space-x-4">
             <CardTitle className="text-xl text-foreground/80">AI 病患聊天室</CardTitle>
-            <div className="flex items-center text-lg font-semibold text-primary">
-              <Trophy className="h-5 w-5 mr-2" />
+            <div className="flex items-center text-base sm:text-lg font-semibold text-accent whitespace-nowrap">
+              <Clock className="h-5 w-5 mr-1 sm:mr-2 flex-shrink-0" />
+              時間：{formatTime(timeLeft)}
+            </div>
+            <div className="flex items-center text-base sm:text-lg font-semibold text-primary whitespace-nowrap">
+              <Trophy className="h-5 w-5 mr-1 sm:mr-2 flex-shrink-0" />
               得分：{score}
             </div>
           </CardHeader>
@@ -170,10 +237,14 @@ const ChatPage: React.FC = () => {
             </ScrollArea>
           </CardContent>
           <CardFooter className="p-4 border-t">
-            {gameOver ? (
-              <Button onClick={initializeGame} className="w-full" variant="default">
+            {gameOver && !isTimeUpDialogOpen ? (
+              <Button onClick={() => initializeGame()} className="w-full" variant="default">
                 <RotateCcw className="mr-2 h-4 w-4" /> 再玩一次
               </Button>
+            ) : gameOver && isTimeUpDialogOpen ? (
+                 <div className="w-full text-center text-muted-foreground">
+                   時間到！請點擊「重新開始」以開始新遊戲。
+                 </div>
             ) : (
               <form onSubmit={handleSendMessage} className="w-full flex gap-2">
                 <Input
@@ -186,7 +257,7 @@ const ChatPage: React.FC = () => {
                 />
                 <Button
                   type="submit"
-                  disabled={isLoadingAI || isLoadingFeedback || !userInput.trim()}
+                  disabled={isLoadingAI || isLoadingFeedback || !userInput.trim() || gameOver}
                   variant="default"
                   aria-label="傳送訊息"
                 >
@@ -196,7 +267,7 @@ const ChatPage: React.FC = () => {
                 <Button
                   type="button"
                   onClick={handleSubmitDiagnosis}
-                  disabled={isLoadingAI || isLoadingFeedback || !userInput.trim()}
+                  disabled={isLoadingAI || isLoadingFeedback || !userInput.trim() || gameOver}
                   variant="outline"
                   aria-label="提交診斷"
                   className="border-accent text-accent hover:bg-accent/10 hover:text-accent"
@@ -204,11 +275,46 @@ const ChatPage: React.FC = () => {
                   {isLoadingFeedback ? <Loader2 className="animate-spin" /> : <Lightbulb />}
                    <span className="ml-2 hidden sm:inline">診斷</span>
                 </Button>
+                <Button
+                  type="button"
+                  onClick={handleSkipQuestion}
+                  disabled={isLoadingAI || isLoadingFeedback || gameOver}
+                  variant="secondary"
+                  aria-label="跳過此題"
+                >
+                  <SkipForward className="mr-2 h-4 w-4" />
+                  <span className="hidden sm:inline">跳過</span>
+                </Button>
               </form>
             )}
           </CardFooter>
         </Card>
       </main>
+      <AlertDialog open={isTimeUpDialogOpen} onOpenChange={(open) => {
+          setIsTimeUpDialogOpen(open);
+          // If dialog is closed (e.g., by ESC or overlay click) and game was over due to time up
+          if (!open && gameOver && timeLeft <= 0) {
+            initializeGame(true); // Reset the game fully, including score
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>時間到！</AlertDialogTitle>
+            <AlertDialogDescription>
+              很遺憾，本回合時間已到。您目前的總得分是：{score}。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <Button onClick={() => {
+              setIsTimeUpDialogOpen(false);
+              initializeGame(true); // Reset game with score
+            }}>
+              <RotateCcw className="mr-2 h-4 w-4" /> 重新開始
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
