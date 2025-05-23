@@ -22,7 +22,7 @@ const ChatPage: React.FC = () => {
   const [isLoadingAI, setIsLoadingAI] = useState(false);
   const [isLoadingFeedback, setIsLoadingFeedback] = useState(false);
   const [gameOver, setGameOver] = useState(false);
-  const [score, setScore] = useState(0); // Added score state
+  const [score, setScore] = useState(0);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -39,14 +39,13 @@ const ChatPage: React.FC = () => {
     setMessages([
       {
         id: crypto.randomUUID(),
-        text: `你好！我今天感覺不太舒服。問我一些問題來弄清楚是哪裡出了問題。`, // Removed hint for production
+        text: `你好！我今天感覺不太舒服。問我一些問題來弄清楚是哪裡出了問題。`,
         sender: 'system',
         timestamp: new Date(),
       },
     ]);
     setGameOver(false);
     setUserInput('');
-    // Score is not reset here to be cumulative across rounds in the same session
   };
 
   useEffect(() => {
@@ -104,7 +103,7 @@ const ChatPage: React.FC = () => {
     if (!userInput.trim() || isLoadingFeedback || gameOver) return;
 
     const diagnosisAttempt = userInput;
-    addMessage(`我的診斷嘗試： ${diagnosisAttempt}`, 'user');
+    addMessage(`我的診斷： ${diagnosisAttempt}`, 'user');
     setUserInput('');
     setIsLoadingFeedback(true);
 
@@ -123,13 +122,13 @@ const ChatPage: React.FC = () => {
         setScore(newScore);
         setGameOver(true);
         addMessage(
-          `恭喜！您已正確診斷出 ${currentCondition}。您的總得分是：${newScore}。`,
+          `恭喜！您已正確診斷出「${currentCondition}」。您的總得分是：${newScore}。`,
           'system',
           true
         );
         toast({
           title: '診斷正確！',
-          description: `您已成功診斷出 ${currentCondition}。總得分：${newScore}。`,
+          description: `您已成功診斷出「${currentCondition}」。總得分：${newScore}。`,
         });
       }
     } catch (error) {
@@ -137,7 +136,7 @@ const ChatPage: React.FC = () => {
       addMessage('抱歉，處理您的診斷時發生錯誤。請再試一次。', 'system', false, true);
       toast({
         title: '錯誤',
-        description: '無法處理診斷。',
+        description: '無法處理您的診斷。',
         variant: 'destructive',
       });
     } finally {
