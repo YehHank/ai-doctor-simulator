@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      # Map host port 3000 to container port 3000
+      # You can change the host port (e.g., "9002:3000") if 3000 is taken on your host
+      - "3000:3000"
+    environment:
+      # NODE_ENV is already set to production in the Dockerfile
+      # Add any other runtime environment variables your application needs
+      # Example:
+      # - MY_API_KEY=your_api_key_here
+      # - DATABASE_URL=your_database_url_here
+
+      # If using Ollama and it's running on your host machine,
+      # you might need to configure the OLLAMA_BASE_URL for your Genkit flow.
+      # For Docker Desktop (Mac/Windows), host.docker.internal usually works.
+      # - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      # For Linux, you might need to use the host's IP or network_mode: host.
+      # This depends on how your genkitx-ollama plugin is configured to find Ollama.
+      # The genkit.ts currently has Ollama plugin commented out.
+      # If you re-enable it, ensure it can reach your Ollama instance.
+      PORT: "3000" # Next.js standalone server uses this
+    restart: unless-stopped
+    # volumes: # Uncomment and configure if you need to persist data (e.g., logs, uploads)
+    #   - ./app-data:/app/data # Example: persist data in ./app-data on the host

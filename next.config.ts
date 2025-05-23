@@ -1,6 +1,8 @@
+
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
+  output: 'standalone', // Added for optimized Docker builds
   /* config options here */
   typescript: {
     ignoreBuildErrors: true,
