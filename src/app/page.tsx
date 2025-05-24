@@ -24,7 +24,7 @@ import AppHeader from '@/components/AppHeader';
 import { SendHorizonal, Lightbulb, RotateCcw, Loader2, Trophy, Clock, SkipForward, Play } from 'lucide-react';
 
 const ROUND_DURATION_SECONDS = 300; // 5 minutes
-const DEFAULT_MODEL_NAME = 'googleai/gemini-2.0-flash'; // Or 'ollama/mistral' for Ollama (ensure Ollama is running and 'mistral' model is available)
+const DEFAULT_MODEL_NAME = process.env.NEXT_PUBLIC_DEFAULT_MODEL_NAME || 'googleai/gemini-2.0-flash'; // Or 'ollama/mistral' for Ollama (ensure Ollama is running and 'mistral' model is available)
 
 const ChatPage: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -59,7 +59,7 @@ const ChatPage: React.FC = () => {
   };
 
   const initializeGame = (resetScoreFlag = false, resetTimerFlag = true) => {
-    clearTimer(); // Always clear timer first
+    clearTimer(); 
     const newCondition = getRandomCondition();
     setCurrentCondition(newCondition);
     setMessages([
@@ -75,15 +75,10 @@ const ChatPage: React.FC = () => {
 
     if (resetTimerFlag) {
       setTimeLeft(ROUND_DURATION_SECONDS);
-      // When timer is fully reset, timeLeft change will trigger useEffect. No need to bump timerVersion.
     } else {
-      // This is for "Next Question" or "Skip Question" where timer continues.
-      // If timeLeft is > 0 and gameOver became false (or was already false),
-      // we need to ensure the timer restarts. Bumping timerVersion will re-run the useEffect.
       if (timeLeft > 0) {
         setTimerVersion(v => v + 1);
       }
-      // If timeLeft <=0, the main timer useEffect will handle setting gameOver.
     }
 
     setIsTimeUpDialogOpen(false);
@@ -93,15 +88,16 @@ const ChatPage: React.FC = () => {
   };
 
   const handleNextQuestion = () => {
-    // Preserves score, preserves timeLeft, starts new condition
-    initializeGame(false, false);
+    clearTimer();
+    setGameOver(false); // Allow new interactions
+    initializeGame(false, false); // Preserves score, preserves timeLeft, starts new condition
   };
 
 
   useEffect(() => {
-    initializeGame(true, true); // Full reset on initial load
+    initializeGame(true, true); 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Initialize on first load
+  }, []); 
 
   // Timer effect
   useEffect(() => {
@@ -112,7 +108,7 @@ const ChatPage: React.FC = () => {
       }
     };
 
-    if (gameOver) {
+    if (gameOver && timeLeft > 0) { // Game ended by correct guess, not by time up
       effectClearTimer();
       return;
     }
@@ -131,7 +127,7 @@ const ChatPage: React.FC = () => {
     }, 1000);
 
     return effectClearTimer;
-  }, [timeLeft, gameOver, timerVersion]); // Added timerVersion to dependencies
+  }, [timeLeft, gameOver, timerVersion]); 
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -185,17 +181,16 @@ const ChatPage: React.FC = () => {
     if (!userInput.trim() || isLoadingFeedback || gameOver) return;
 
     const diagnosisAttempt = userInput;
-    const messagesBeforeThisDiagnosisAttempt = [...messages]; 
+    const messagesBeforeThisDiagnosisAttempt = messages.filter(
+        msg => !(msg.sender === 'user' && msg.text.startsWith('我的診斷：'))
+    );
 
     addMessage(`我的診斷： ${diagnosisAttempt}`, 'user');
     setUserInput('');
     setIsLoadingFeedback(true);
 
     try {
-      const relevantHistoryForClues = messagesBeforeThisDiagnosisAttempt.filter(
-        msg => !(msg.sender === 'user' && msg.text.startsWith('我的診斷：'))
-      );
-      const clues = formatChatHistory(relevantHistoryForClues);
+      const clues = formatChatHistory(messagesBeforeThisDiagnosisAttempt);
       
       const feedbackResponse = await provideDiagnosisFeedback({
         diagnosisAttempt,
@@ -237,7 +232,6 @@ const ChatPage: React.FC = () => {
   const handleSkipQuestion = () => {
     if (isLoadingAI || isLoadingFeedback || gameOver) return;
     addMessage('使用者選擇跳過此題。正在準備新的病例...', 'system');
-    // Preserves score, preserves timeLeft, starts new condition
     initializeGame(false, false); 
   };
   
@@ -277,15 +271,15 @@ const ChatPage: React.FC = () => {
             </ScrollArea>
           </CardContent>
           <CardFooter className="p-4 border-t">
-            {gameOver && !isTimeUpDialogOpen ? ( // Correct guess scenario
+            {gameOver && !isTimeUpDialogOpen ? ( 
               <Button onClick={handleNextQuestion} className="w-full" variant="default">
                 <Play className="mr-2 h-4 w-4" /> 下一題
               </Button>
-            ) : gameOver && isTimeUpDialogOpen ? ( // Time is up scenario
+            ) : gameOver && isTimeUpDialogOpen ? ( 
                  <div className="w-full text-center text-muted-foreground">
                    時間到！請點擊「重新開始」以開始新遊戲。
                  </div>
-            ) : ( // Normal gameplay, form is active
+            ) : ( 
               <form onSubmit={handleSendMessage} className="w-full flex gap-2">
                 <Input
                   type="text"
@@ -332,10 +326,8 @@ const ChatPage: React.FC = () => {
       </main>
       <AlertDialog open={isTimeUpDialogOpen} onOpenChange={(open) => {
           setIsTimeUpDialogOpen(open);
-          // Only auto-restart if dialog is closed AND it was a time-up game over.
-          // This prevents restarting if user closes dialog before time is officially up (e.g. by ESC key).
           if (!open && gameOver && timeLeft <= 0) { 
-            initializeGame(true, true); // Full reset: score and timer
+            initializeGame(true, true); 
           }
         }}
       >
@@ -349,7 +341,7 @@ const ChatPage: React.FC = () => {
           <AlertDialogFooter>
             <Button onClick={() => {
               setIsTimeUpDialogOpen(false);
-              initializeGame(true, true); // Full reset: score and timer
+              initializeGame(true, true); 
             }}>
               <RotateCcw className="mr-2 h-4 w-4" /> 重新開始
             </Button>
